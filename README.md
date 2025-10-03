@@ -43,23 +43,23 @@ Three workspaces will be created in the current directory to persist data:
 
 - **Postgres**:
 
-| Name                        | Description                                                                                            | Default Value              |
-| --------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------- |
-| POSTGRES_ADMIN              | PostgreSQL admin username                                                                              | `postgres`                 |
-| POSTGRES_ADMIN_PASSWORD     | PostgreSQL admin password                                                                              | `postgrespassword`         |
-| POSTGRES_MULTIPLE_DATABASES | Comma-separated list of databases to create. Please ensure that the default databases are also created | `keycloak, hololinked`     |
-| POSTGRES_NONADMIN_PASSWORD  | Password for non-admin users (`keycloak`, `hololinked`)                                                | `postgresnonadminpassword` |
+| Name                          | Description                                                                                                                       | Default Value              |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `POSTGRES_ADMIN`              | PostgreSQL admin username                                                                                                         | `postgres`                 |
+| `POSTGRES_ADMIN_PASSWORD`     | PostgreSQL admin password                                                                                                         | `postgrespassword`         |
+| `POSTGRES_MULTIPLE_DATABASES` | Comma-separated list of databases to create. Please ensure that the default databases are also created if you intend to use them. | `keycloak, hololinked`     |
+| `POSTGRES_NONADMIN_PASSWORD`  | General password for non-admin users (`keycloak`, `hololinked`)                                                                   | `postgresnonadminpassword` |
 
 - **CloudBeaver**:
 
-| Name                       | Description                                                                                                            | Default Value |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------- |
-| CLOUDBEAVER_ADMIN          | CloudBeaver admin username                                                                                             | admin         |
-| CLOUDBEAVER_ADMIN_PASSWORD | CloudBeaver admin password, generally requires a strong password otherwise you will be reprompted to create once again | adminpassword |
+| Name                         | Description                                                                                                            | Default Value   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `CLOUDBEAVER_ADMIN`          | CloudBeaver admin username                                                                                             | `admin`         |
+| `CLOUDBEAVER_ADMIN_PASSWORD` | CloudBeaver admin password, generally requires a strong password otherwise you will be reprompted to create once again | `adminpassword` |
 
 - **Keycloak**:
 
-| Name                    | Description             | Default Value |
-| ----------------------- | ----------------------- | ------------- |
-| KEYCLOAK_ADMIN          | Keycloak admin username | admin         |
-| KEYCLOAK_ADMIN_PASSWORD | Keycloak admin password | adminpassword |
+| Name                      | Description             | Default Value   |
+| ------------------------- | ----------------------- | --------------- |
+| `KEYCLOAK_ADMIN`          | Keycloak admin username | `admin`         |
+| `KEYCLOAK_ADMIN_PASSWORD` | Keycloak admin password | `adminpassword` |

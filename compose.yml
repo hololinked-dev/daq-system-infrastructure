@@ -6,15 +6,14 @@ services:
       POSTGRES_USER: ${POSTGRES_ADMIN:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgrespassword}
       POSTGRES_NONADMIN_PASSWORD: ${POSTGRES_NONADMIN_PASSWORD:-postgresnonadminpassword}
-      # Uncomment and set these for custom databases
       POSTGRES_MULTIPLE_DATABASES: keycloak, hololinked
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     command: ["postgres", "-c", "listen_addresses=*"]   # allow network connections
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres-workspace:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./scripts/init-db:/docker-entrypoint-initdb.d
     restart: unless-stopped
 
   dbeaver:
@@ -28,8 +27,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./initial-data-sources.conf:/opt/cloudbeaver/conf/initial-data-sources.conf
-      - ./dbeaver-workspace:/opt/cloudbeaver/workspace
+      - ./conf/dbeaver-initial-data-sources.conf:/opt/cloudbeaver/conf/initial-data-sources.conf
+      - ./data/dbeaver:/opt/cloudbeaver/workspace
     restart: unless-stopped
     depends_on:
       - postgres
@@ -50,5 +49,8 @@ services:
       - "8080:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/keycloak:/opt/keycloak/data
+    restart: unless-stopped
     depends_on:
       - postgres

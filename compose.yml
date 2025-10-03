@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_ADMIN:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgrespassword}
+      # Uncomment and set these for custom databases
+      POSTGRES_MULTIPLE_DATABASES: keycloak, hololinked
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    command: ["postgres", "-c", "listen_addresses=*"]   # allow network connections
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-workspace:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+
+  dbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: dbeaver
+    environment:
+      CB_ADMIN_NAME: ${CLOUDBEAVER_ADMIN:-admin}
+      CB_ADMIN_PASSWORD: ${CLOUDBEAVER_ADMIN_PASSWORD:-adminpassword}
+    ports:
+      - "8978:8978"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./initial-data-sources.conf:/opt/cloudbeaver/conf/initial-data-sources.conf
+      - ./dbeaver-workspace:/opt/cloudbeaver/workspace
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.3
+    container_name: keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: host.docker.internal
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: ${POSTGRES_ADMIN:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgrespassword}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-adminpassword}
+    command: start-dev
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - postgres

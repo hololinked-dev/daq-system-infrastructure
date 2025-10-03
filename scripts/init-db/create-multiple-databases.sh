@@ -8,8 +8,9 @@ function create_user_and_database() {
 	echo "  Creating user and database '$database'"
 	psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
 	    CREATE USER $database WITH ENCRYPTED PASSWORD '$POSTGRES_NONADMIN_PASSWORD';
-	    CREATE DATABASE $database;
+	    CREATE DATABASE $database WITH OWNER $database;
 	    GRANT ALL PRIVILEGES ON DATABASE $database TO $database;
+		GRANT USAGE, CREATE ON SCHEMA public TO $database;
 EOSQL
 }
 

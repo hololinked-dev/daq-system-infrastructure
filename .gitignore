@@ -1,5 +1,7 @@
 # Our folders
 **/postgres-workspace
+**/dbeaver-workspace
+**/keycloak-workspace
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

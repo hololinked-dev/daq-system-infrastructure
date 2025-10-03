@@ -1,6 +1,7 @@
 # DAQ System Infrastructure (Docker)
 
 Project to setup a infrastructure for a networked data acquisition system or IoT based on docker.
+Suitable for usage with [`hololinked`](https://github.com/hololinked-dev/hololinked) or any DAQ or IoT platform in general.
 There will be a separate version for Kubernetes.
 
 ## Components
@@ -32,23 +33,29 @@ Then:
 docker-compose up -d
 ```
 
+Three workspaces will be created in the current directory to persist data:
+
+- `postgres-workspace`: PostgreSQL data
+- `dbeaver-workspace`: CloudBeaver data
+- `keycloak-workspace`: Keycloak data
+
 #### Variables
 
 - **Postgres**:
 
-| Name                        | Description                                         | Default Value    |
-| --------------------------- | --------------------------------------------------- | ---------------- |
-| POSTGRES_ADMIN              | PostgreSQL admin username                           | postgres         |
-| POSTGRES_ADMIN_PASSWORD     | PostgreSQL admin password                           | postgrespassword |
-| POSTGRES_MULTIPLE_DATABASES | Comma-separated list of databases to create         |                  |
-| POSTGRES_NONADMIN_PASSWORD  | Password for non-admin users (keycloak, hololinked) | nonadminpassword |
+| Name                        | Description                                                                                            | Default Value              |
+| --------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------- |
+| POSTGRES_ADMIN              | PostgreSQL admin username                                                                              | `postgres`                 |
+| POSTGRES_ADMIN_PASSWORD     | PostgreSQL admin password                                                                              | `postgrespassword`         |
+| POSTGRES_MULTIPLE_DATABASES | Comma-separated list of databases to create. Please ensure that the default databases are also created | `keycloak, hololinked`     |
+| POSTGRES_NONADMIN_PASSWORD  | Password for non-admin users (`keycloak`, `hololinked`)                                                | `postgresnonadminpassword` |
 
 - **CloudBeaver**:
 
-| Name                       | Description                | Default Value |
-| -------------------------- | -------------------------- | ------------- |
-| CLOUDBEAVER_ADMIN          | CloudBeaver admin username | admin         |
-| CLOUDBEAVER_ADMIN_PASSWORD | CloudBeaver admin password | adminpassword |
+| Name                       | Description                                                                                                            | Default Value |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------- |
+| CLOUDBEAVER_ADMIN          | CloudBeaver admin username                                                                                             | admin         |
+| CLOUDBEAVER_ADMIN_PASSWORD | CloudBeaver admin password, generally requires a strong password otherwise you will be reprompted to create once again | adminpassword |
 
 - **Keycloak**:
 

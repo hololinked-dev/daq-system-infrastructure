@@ -5,6 +5,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_ADMIN:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgrespassword}
+      POSTGRES_NONADMIN_PASSWORD: ${POSTGRES_NONADMIN_PASSWORD:-postgresnonadminpassword}
       # Uncomment and set these for custom databases
       POSTGRES_MULTIPLE_DATABASES: keycloak, hololinked
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
@@ -40,8 +41,8 @@ services:
       KC_DB: postgres
       KC_DB_URL_HOST: host.docker.internal
       KC_DB_URL_DATABASE: keycloak
-      KC_DB_USERNAME: ${POSTGRES_ADMIN:-postgres}
-      KC_DB_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgrespassword}
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${POSTGRES_NONADMIN_PASSWORD:-postgresnonadminpassword}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-adminpassword}
     command: start-dev

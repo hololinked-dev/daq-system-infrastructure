@@ -35,9 +35,10 @@ docker-compose up -d
 
 Three workspaces will be created in the current directory to persist data:
 
-- `postgres-workspace`: PostgreSQL data
-- `dbeaver-workspace`: CloudBeaver data
-- `keycloak-workspace`: Keycloak data
+- `data/postgres`: PostgreSQL data
+- `data/dbeaver`: CloudBeaver data
+- `data/keycloak`: Keycloak data
+- `data/mongo`: MongoDB data (if using MongoDB)
 
 #### Variables
 
@@ -63,3 +64,18 @@ Three workspaces will be created in the current directory to persist data:
 | ------------------------- | ----------------------- | --------------- |
 | `KEYCLOAK_ADMIN`          | Keycloak admin username | `admin`         |
 | `KEYCLOAK_ADMIN_PASSWORD` | Keycloak admin password | `adminpassword` |
+
+- **MongoDB**:
+
+If you wish to use mongoDB with `hololinked`,
+
+`docker compose -f compose-mongo.yml up -d`
+
+with the following environment variables:
+
+| Name                          | Description                  | Default Value   |
+| ----------------------------- | ---------------------------- | --------------- |
+| `MONGO_ADMIN`                 | MongoDB admin username       | `mongoadmin`    |
+| `MONGO_ADMIN_PASSWORD`        | MongoDB admin password       | `mongopassword` |
+| `MONGOEXPRESS_ADMIN`          | Mongo Express admin username | `admin`         |
+| `MONGOEXPRESS_ADMIN_PASSWORD` | Mongo Express admin password | `adminpassword` |

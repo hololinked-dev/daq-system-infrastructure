@@ -5,19 +5,17 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ADMIN:-mongoadmin}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASSWORD:-mongopassword}
-      MONGO_INITDB_DATABASE: hololinked
     ports:
       - "27017:27017"
     volumes:
       - ./data/mongo:/data/db
-      # - ./scripts/init-mongo:/docker-entrypoint-initdb.d
     restart: unless-stopped
 
   mongodb-express:
     image: mongo-express:1.0
     container_name: mongodb-express
     environment:
-      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ADMIN:-mongoadmin}:${MONGO_ADMIN_PASSWORD:-mongopassword}@mongodb:27017/?authSource=admin
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ADMIN:-mongoadmin}:${MONGO_ADMIN_PASSWORD:-mongopassword}@host.docker.internal:27017/?authSource=admin
       ME_CONFIG_BASICAUTH_USERNAME: ${MONGOEXPRESS_ADMIN:-admin}
       ME_CONFIG_BASICAUTH_PASSWORD: ${MONGOEXPRESS_ADMIN_PASSWORD:-adminpassword}
     ports:

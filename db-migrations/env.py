@@ -1,9 +1,11 @@
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from dotenv import load_dotenv
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -14,16 +16,23 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
+from hololinked.storage.database import ThingTableBase  # noqa: E402
+
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = ThingTableBase.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+load_dotenv(override=True)
+POSTGRES_NONADMIN_USER = os.getenv("POSTGRES_NONADMIN_USER", "hololinked")
+POSTGRES_NONADMIN_PASSWORD = os.getenv("POSTGRES_NONADMIN_PASSWORD", "postgresnonadminpassword")
+config.set_main_option(
+    "sqlalchemy.url",
+    f"postgresql+psycopg2://{POSTGRES_NONADMIN_USER}:{POSTGRES_NONADMIN_PASSWORD}@localhost:5432/hololinked",
+)
 
 
 def run_migrations_offline() -> None:
@@ -64,9 +73,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

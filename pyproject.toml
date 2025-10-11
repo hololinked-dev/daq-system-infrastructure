@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.16.5",
-    "hololinked>=0.3.3",
+    "dotenv>=0.9.9",
+    "pip>=25.2",
+    "psycopg2-binary>=2.9.11",
     "sqlalchemy-utils>=0.42.0",
+    "hololinked>=0.3.5"
 ]

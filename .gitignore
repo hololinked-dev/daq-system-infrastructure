@@ -3,6 +3,9 @@
 **/dbeaver
 **/keycloak
 **/mongo
+**/mosquitto
+data/
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -6,9 +6,10 @@ There will be a separate version for Kubernetes.
 
 ## Components
 
-- **PostgreSQL**: Database server to store data.
 - **Keycloak**: Identity and Access Management (IAM) server for authentication and authorization.
+- **PostgreSQL**: Database server to store data. Mandatory for keycloak.
 - **CloudBeaver**: Web-based database management tool for PostgreSQL.
+- **MongoDB** (optional): NoSQL database. Either of MongoDB or PostgreSQL can be used with `hololinked`.
 
 ## Prerequisites
 
@@ -30,10 +31,16 @@ KEYCLOAK_ADMIN_PASSWORD=mysecretpassword3
 Then:
 
 ```bash
+docker-compose up -d postgres dbeaver keycloak
+```
+
+Or, if you wish to use all services including MongoDB:
+
+```bash
 docker-compose up -d
 ```
 
-Three workspaces will be created in the current directory to persist data:
+Four workspaces will be created in the current directory to persist data:
 
 - `data/postgres`: PostgreSQL data
 - `data/dbeaver`: CloudBeaver data
@@ -79,3 +86,13 @@ with the following environment variables:
 | `MONGO_ADMIN_PASSWORD`        | MongoDB admin password       | `mongopassword` |
 | `MONGOEXPRESS_ADMIN`          | Mongo Express admin username | `admin`         |
 | `MONGOEXPRESS_ADMIN_PASSWORD` | Mongo Express admin password | `adminpassword` |
+
+### Database Migrations
+
+To apply database migrations for `hololinked`, you can use the following command:
+
+```bash
+alembic -c postgresql://<POSTGRES_ADMIN>:<POSTGRES_ADMIN_PASSWORD>@localhost:5432/hololinked upgrade head
+```
+
+A list of migration versions and their compatibility with the current version can be found in the `alembic/versions` directory of the `hololinked` repository.

@@ -8,10 +8,7 @@ services:
       POSTGRES_NONADMIN_PASSWORD: ${POSTGRES_NONADMIN_PASSWORD:-postgresnonadminpassword}
       POSTGRES_MULTIPLE_DATABASES: keycloak, hololinked
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
-    command: [
-      "postgres",
-      "-c listen_addresses=*",
-    ]
+    command: ["postgres", "-c", "listen_addresses=*"]
     # "-c max_connections=200",
     # "-c max_worker_processes=2",
     # "-c max_parallel_workers=2",
@@ -43,39 +40,79 @@ services:
     depends_on:
       - postgres  
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.1.3
-    container_name: keycloak
+  mongodb:
+    image: mongo:8.0
+    container_name: mongodb
     environment:
-      KC_DB: postgres
-      KC_DB_URL_HOST: host.docker.internal
-      KC_DB_URL_DATABASE: keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: ${POSTGRES_NONADMIN_PASSWORD:-postgresnonadminpassword}
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-adminpassword}
-    command: start-dev
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ADMIN:-mongoadmin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASSWORD:-mongopassword}
     ports:
-      - "8080:8080"
+      - "27017:27017"
+    volumes:
+      - ./data/mongo:/data/db
+    restart: unless-stopped
+
+  mongodb-express:
+    image: mongo-express:1.0
+    container_name: mongodb-express
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ADMIN:-mongoadmin}:${MONGO_ADMIN_PASSWORD:-mongopassword}@host.docker.internal:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGOEXPRESS_ADMIN:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGOEXPRESS_ADMIN_PASSWORD:-adminpassword}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    volumes:
-      - ./data/keycloak:/opt/keycloak/data
     restart: unless-stopped
-    depends_on:
-      - postgres
 
-  reverse-proxy:
-    image: nginx:latest
-    container_name: reverse-proxy
+  mqtt-broker:
+    image: eclipse-mosquitto:2.0
+    container_name: mqtt-broker
     ports:
-      - "80:80"
-      - "443:443"
+      - "1883:1883"
+      - "9001:9001" # websockets, not used yet by hololinked
     volumes:
-      - ./conf/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certs/server.crt:/etc/nginx/server.crt:ro
-      - ./certs/server.key:/etc/nginx/server.key:ro
-    depends_on:
-      - keycloak
-      - dbeaver
+      - ./conf/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./data/mosquitto:/mosquitto/data 
+      - ./data/mosquitto/log:/mosquitto/log
+      - ./data/mosquitto/persisted:/mosquitto/data/persisted/
     restart: unless-stopped
+
+  # keycloak:
+  #   image: quay.io/keycloak/keycloak:26.1.3
+  #   container_name: keycloak
+  #   environment:
+  #     KC_DB: postgres
+  #     KC_DB_URL_HOST: host.docker.internal
+  #     KC_DB_URL_DATABASE: keycloak
+  #     KC_DB_USERNAME: keycloak
+  #     KC_DB_PASSWORD: ${POSTGRES_NONADMIN_PASSWORD:-postgresnonadminpassword}
+  #     KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+  #     KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-adminpassword}
+  #   command: start-dev
+  #   ports:
+  #     - "8080:8080"
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   volumes:
+  #     - ./data/keycloak:/opt/keycloak/data
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - postgres
+
+  # reverse-proxy:
+  #   image: nginx:latest
+  #   container_name: reverse-proxy
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./conf/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./certs/server.crt:/etc/nginx/server.crt:ro
+  #     - ./certs/server.key:/etc/nginx/server.key:ro
+  #   depends_on:
+  #     - keycloak
+  #     - dbeaver
+  #   restart: unless-stopped

@@ -6,6 +6,7 @@
 **/mosquitto
 data/
 logs/
+certs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

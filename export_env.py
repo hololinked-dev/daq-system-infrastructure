@@ -23,6 +23,7 @@ mapping = {
     "POSTGRES_SHARED_BUFFERS": "postgres.shared_buffers",
     "POSTGRES_EFFECTIVE_CACHE_SIZE": "postgres.effective_cache_size",
     "POSTGRES_MAINTENANCE_WORK_MEM": "postgres.maintenance_work_mem",
+    "POSTGRES_INITDB_ARGS": "postgres.initdb_args",
     # keycloak
     "KEYCLOAK_ADMIN": "keycloak.admin_username",
     "KEYCLOAK_ADMIN_PASSWORD": "keycloak.admin_password",
@@ -32,6 +33,22 @@ mapping = {
     # dbeaver
     "DBEAVER_ADMIN_USERNAME": "dbeaver.admin_username",
     "DBEAVER_ADMIN_PASSWORD": "dbeaver.admin_password",
+}
+
+defaults = {
+    "postgres.listen_addresses": "*",
+    "postgres.max_connections": 100,
+    "postgres.max_worker_processes": 2,
+    "postgres.max_parallel_workers": 2,
+    "postgres.max_parallel_workers_per_gather": 1,
+    "postgres.shared_buffers": "128MB",
+    "postgres.effective_cache_size": "256MB",
+    "postgres.maintenance_work_mem": "64MB",
+    "postgres.initdb_args": "--auth-host=scram-sha-256 --auth-local=scram-sha-256",
+    "dbeaver.config_path": "conf/dbeaver-initial-data-sources.conf",
+    "database.hololinked.name": "hololinked",
+    "database.keycloak.name": "keycloak",
+    "keycloak.database_engine": "postgres",
 }
 
 database_keys = ["database.hololinked", "database.keycloak"]
@@ -50,6 +67,8 @@ def get_value(path: str, default: Any = None) -> Any:
         if not isinstance(cur, dict) or part not in cur:
             if default is not None:
                 return default
+            if defaults and path in defaults:
+                return defaults[path]
             raise KeyError(path)
         cur = cur[part]
     return cur

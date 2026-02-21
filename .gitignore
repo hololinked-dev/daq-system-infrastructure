@@ -7,7 +7,8 @@
 data/
 logs/
 certs/
-**/config.toml 
+**/config.toml
+**/password.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

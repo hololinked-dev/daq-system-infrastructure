@@ -9,6 +9,7 @@ shared_buffers = "2GB"
 effective_cache_size = "6GB"
 maintenance_work_mem = "1GB"
 listen_addresses = "*"
+init_db_args = "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
 
 [database.keycloak]
 name = "keycloak"
@@ -20,7 +21,7 @@ name = "hololinked"
 username = "hololinked"
 password = "password"
 
-[cloudbeaver]
+[dbeaver]
 admin_username = "admin"
 admin_password = "password"
 

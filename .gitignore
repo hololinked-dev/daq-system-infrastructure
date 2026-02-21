@@ -7,6 +7,7 @@
 data/
 logs/
 certs/
+**/config.toml 
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -15,14 +16,6 @@ __pycache__/
 
 # C extensions
 *.so
-# custom folders
-old/ 
-doc/build
-doc/source/generated
-extra-packages 
-tests/test-rpc-results.txt
-tests/run-unittest.bat
-# comment tests until good organisation comes about
 
 # vs-code 
 .vscode/launch.json

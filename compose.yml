@@ -1,25 +1,36 @@
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     container_name: postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_ADMIN:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgrespassword}
-      POSTGRES_NONADMIN_PASSWORD: ${POSTGRES_NONADMIN_PASSWORD:-postgresnonadminpassword}
-      POSTGRES_MULTIPLE_DATABASES: keycloak, hololinked
+      POSTGRES_USER: ${POSTGRES_ADMIN}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      POSTGRES_DATABASES: ${POSTGRES_DATABASES}
+      POSTGRES_DATABASE_USERNAMES: ${POSTGRES_DATABASE_USERNAMES}
+      POSTGRES_DATABASE_PASSWORDS: ${POSTGRES_DATABASE_PASSWORDS}
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
-    command: ["postgres", "-c", "listen_addresses=*"]
-    # "-c max_connections=200",
-    # "-c max_worker_processes=2",
-    # "-c max_parallel_workers=2",
-    # "-c max_parallel_workers_per_gather=1",
-    # "-c shared_buffers=256MB",
-    # "-c effective_cache_size=768MB",
-    # "-c maintenance_work_mem=64MB",
+    command:
+      - "postgres"
+      - "-c"
+      - "listen_addresses=${POSTGRES_LISTEN_ADDRESSES}"
+      - "-c"
+      - "max_connections=${POSTGRES_MAX_CONNECTIONS}"
+      - "-c"
+      - "max_worker_processes=${POSTGRES_MAX_WORKER_PROCESSES}"
+      - "-c"
+      - "max_parallel_workers=${POSTGRES_MAX_PARALLEL_WORKERS}"
+      - "-c"
+      - "max_parallel_workers_per_gather=${POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER}"
+      - "-c"
+      - "shared_buffers=${POSTGRES_SHARED_BUFFERS}"
+      - "-c"
+      - "effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE}"
+      - "-c"
+      - "maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM}"
     ports:
       - "5432:5432"
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql
       - ./scripts/init-db:/docker-entrypoint-initdb.d
     restart: unless-stopped
 
@@ -27,8 +38,8 @@ services:
     image: dbeaver/cloudbeaver:latest
     container_name: dbeaver
     environment:
-      CB_ADMIN_NAME: ${CLOUDBEAVER_ADMIN:-admin}
-      CB_ADMIN_PASSWORD: ${CLOUDBEAVER_ADMIN_PASSWORD:-adminpassword}
+      CB_ADMIN_NAME: ${CLOUDBEAVER_ADMIN_USERNAME}
+      CB_ADMIN_PASSWORD: ${CLOUDBEAVER_ADMIN_PASSWORD}
     ports:
       - "8978:8978"
     extra_hosts:
@@ -39,6 +50,28 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres  
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.3
+    container_name: keycloak
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: host.docker.internal
+      KC_DB_URL_DATABASE: ${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USERNAME}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    command: start-dev
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/keycloak:/opt/keycloak/data
+    restart: unless-stopped
+    depends_on:
+      - postgres
 
   mongodb:
     image: mongo:8.0
@@ -72,37 +105,16 @@ services:
     container_name: mqtt-broker
     ports:
       - "8883:8883"
-      # - "1883:1883" # uncomment for non-TLS MQTT
       - "9001:9001" # websockets, not used yet by hololinked
+      # - "1883:1883" # uncomment for non-TLS MQTT
     volumes:
       - ./conf/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./conf/passwords.txt:/mosquitto/config/passwords.txt
       - ./data/mosquitto:/mosquitto/data 
       - ./data/mosquitto/log:/mosquitto/log
       - ./data/mosquitto/persisted:/mosquitto/data/persisted/
       - ./certs:/mosquitto/config/certs
     restart: unless-stopped
-
-  # keycloak:
-  #   image: quay.io/keycloak/keycloak:26.1.3
-  #   container_name: keycloak
-  #   environment:
-  #     KC_DB: postgres
-  #     KC_DB_URL_HOST: host.docker.internal
-  #     KC_DB_URL_DATABASE: keycloak
-  #     KC_DB_USERNAME: keycloak
-  #     KC_DB_PASSWORD: ${POSTGRES_NONADMIN_PASSWORD:-postgresnonadminpassword}
-  #     KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-  #     KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-adminpassword}
-  #   command: start-dev
-  #   ports:
-  #     - "8080:8080"
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   volumes:
-  #     - ./data/keycloak:/opt/keycloak/data
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - postgres
 
   # reverse-proxy:
   #   image: nginx:latest

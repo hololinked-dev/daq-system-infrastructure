@@ -1,0 +1,31 @@
+[postgres]
+admin_username = "admin"
+admin_password = "password"
+max_connections = 200
+max_worker_processes = 8
+max_parallel_workers = 8
+max_parallel_workers_per_gather = 4
+shared_buffers = "2GB"
+effective_cache_size = "6GB"
+maintenance_work_mem = "1GB"
+listen_addresses = "*"
+
+[database.keycloak]
+name = "keycloak"
+username = "keycloak"
+password = "password"
+
+[database.hololinked]
+name = "hololinked"
+username = "hololinked"
+password = "password"
+
+[cloudbeaver]
+admin_username = "admin"
+admin_password = "password"
+
+[keycloak]
+database_engine = "postgres"
+admin_username = "admin"
+admin_password = "password"
+

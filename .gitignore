@@ -8,7 +8,7 @@ data/
 logs/
 certs/
 **/config.toml
-**/password.txt
+**/passwords.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -18,12 +18,12 @@ __pycache__/
 # C extensions
 *.so
 
-# vs-code 
+# vs-code
 .vscode/launch.json
 .vs/
 
-# zmq 
-*.ipc 
+# zmq
+*.ipc
 
 # Distribution / packaging
 .Python

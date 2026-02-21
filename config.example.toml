@@ -30,3 +30,10 @@ database_engine = "postgres"
 admin_username = "admin"
 admin_password = "password"
 
+[mongodb]
+admin_username = "admin"
+admin_password = "password"
+
+[mongodb.express]
+admin_username = "admin"
+admin_password = "password"

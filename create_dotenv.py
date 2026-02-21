@@ -33,6 +33,12 @@ mapping = {
     # dbeaver
     "DBEAVER_ADMIN_USERNAME": "dbeaver.admin_username",
     "DBEAVER_ADMIN_PASSWORD": "dbeaver.admin_password",
+    # mongodb
+    "MONGO_ADMIN": "mongodb.admin_username",
+    "MONGO_ADMIN_PASSWORD": "mongodb.admin_password",
+    # mongo-express
+    "MONGOEXPRESS_ADMIN": "mongodb.express.admin_username",
+    "MONGOEXPRESS_ADMIN_PASSWORD": "mongodb.express.admin_password",
 }
 
 defaults = {
@@ -51,7 +57,24 @@ defaults = {
     "keycloak.database_engine": "postgres",
 }
 
-database_keys = ["database.hololinked", "database.keycloak"]
+database_keys = [
+    "database.hololinked",
+    "database.keycloak",
+]
+
+sections = [
+    "postgres",
+    "keycloak",
+    "dbeaver",
+    "mongodb",
+    "mongo_express",
+    "database.hololinked",
+    "database.keycloak",
+]
+
+config_section_dependencies = {
+    "keycloak": ["database.keycloak"],
+}
 
 
 def load_file(path: str) -> dict[str, Any]:
@@ -62,6 +85,7 @@ def load_file(path: str) -> dict[str, Any]:
 
 
 def get_value(path: str, default: Any = None) -> Any:
+    global cfg
     cur = cfg
     for part in path.split("."):
         if not isinstance(cur, dict) or part not in cur:
@@ -74,27 +98,46 @@ def get_value(path: str, default: Any = None) -> Any:
     return cur
 
 
+def validate_dependencies() -> None:
+    global cfg
+    for section, dependencies in config_section_dependencies.items():
+        if section not in cfg:
+            continue
+        for dep in dependencies:
+            try:
+                get_value(dep)
+            except KeyError:
+                print(f"ERROR: Missing required configuration '{dep}' for section '{section}'", file=sys.stderr)
+                raise SystemExit(2)
+
+
+def validate_sections() -> None:
+    global cfg
+    for section in sections:
+        if section not in cfg:
+            continue
+        # Check for username/password or admin_username/admin_password
+        section_data = cfg[section]
+        has_user_pass = ("username" in section_data and "password" in section_data) or (
+            "admin_username" in section_data and "admin_password" in section_data
+        )
+        if not has_user_pass:
+            print(
+                f"WARNING: Section '{section}' missing username/password or admin_username/admin_password",
+                file=sys.stderr,
+            )
+
+
 def load_variables() -> dict[str, str]:
 
-    missing = []
     exports = {}
 
     for env_var, toml_path in mapping.items():
         try:
             val = get_value(toml_path)
         except KeyError:
-            missing.append(toml_path)
-            continue
-        if val is None:
-            missing.append(toml_path)
             continue
         exports[env_var] = str(val)
-
-    if missing:
-        print("ERROR: Missing required keys in TOML:", file=sys.stderr)
-        for k in missing:
-            print(f"- {k}", file=sys.stderr)
-        raise SystemExit(2)
 
     databases = []
     database_usernames = []
@@ -146,16 +189,11 @@ def shell_quote(s: str) -> str:
     return "'" + s.replace("'", "'\"'\"'") + "'"
 
 
-def export_envs_posix(envs: dict[str, str]) -> None:
-    for k, v in envs.items():
-        cmd = f"export {k}={shell_quote(v)}"
-        print(cmd)
-
-
-def export_envs_windows(envs: dict[str, str]) -> None:
-    for k, v in envs.items():
-        cmd = f"call set {k}={v}"
-        print(cmd)
+def export_dotenv(envs: dict[str, str]) -> None:
+    with open(".env", "w") as f:
+        for k, v in envs.items():
+            f.write(f"{k}={v}\n")
+    print("INFO: Exported environment variables to .env file")
 
 
 def arg_parser() -> argparse.Namespace:
@@ -168,18 +206,33 @@ def arg_parser() -> argparse.Namespace:
         help="Path to config TOML file, default is 'config.toml'",
     )
 
+    parser.add_argument(
+        "--export-dotenv",
+        action="store_true",
+        default=False,
+        help="Export environment variables to .env file (default: false)",
+    )
+
+    parser.add_argument(
+        "--create-mqtt-passwords",
+        action="store_true",
+        default=False,
+        help="Create MQTT password files for mosquitto (default: false)",
+    )
+
     return parser.parse_args()
 
 
 def main() -> None:
     args = arg_parser()
-    load_file(args.config)
-    exports = load_variables()
 
-    if sys.platform.startswith("win"):
-        export_envs_windows(exports)
-    else:
-        export_envs_posix(exports)
+    if args.export_dotenv:
+        print("INFO: Exporting environment variables to .env file")
+        load_file(args.config)
+        validate_sections()
+        validate_dependencies()
+        exports = load_variables()
+        export_dotenv(exports)
 
 
 if __name__ == "__main__":

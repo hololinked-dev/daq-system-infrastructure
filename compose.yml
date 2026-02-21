@@ -77,8 +77,8 @@ services:
     image: mongo:8.0
     container_name: mongodb
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ADMIN:-mongoadmin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASSWORD:-mongopassword}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ADMIN}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ADMIN_PASSWORD}
     ports:
       - "27017:27017"
     volumes:
@@ -89,9 +89,9 @@ services:
     image: mongo-express:1.0
     container_name: mongodb-express
     environment:
-      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ADMIN:-mongoadmin}:${MONGO_ADMIN_PASSWORD:-mongopassword}@host.docker.internal:27017/?authSource=admin
-      ME_CONFIG_BASICAUTH_USERNAME: ${MONGOEXPRESS_ADMIN:-admin}
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGOEXPRESS_ADMIN_PASSWORD:-adminpassword}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ADMIN}:${MONGO_ADMIN_PASSWORD}@host.docker.internal:27017/?authSource=admin
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGOEXPRESS_ADMIN}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGOEXPRESS_ADMIN_PASSWORD}
     ports:
       - "8081:8081"
     depends_on:

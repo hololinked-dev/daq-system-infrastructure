@@ -10,16 +10,19 @@ dependencies = [
     "pip>=25.2",
     "psycopg2-binary>=2.9.11",
     "sqlalchemy-utils>=0.42.0",
-    "hololinked>=0.3.11"
+    "hololinked>=0.3.11",
+    "pydantic>=2.7.0"
 ]
 
 [project.scripts]
 create_dotenv = "create_dotenv:main"
+ctl = "cli.ctl:main"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
+packages = ["cli"]
 py-modules = ["create_dotenv"]
 

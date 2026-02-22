@@ -37,3 +37,12 @@ admin_password = "password"
 [mongodb.express]
 admin_username = "admin"
 admin_password = "password"
+
+[mqtt]
+password_file = "conf/passwords.txt"
+iterations = 101
+salt_bytes = 12
+
+[[mqtt.users]]
+username = "sampleuser"
+password = "changeme"

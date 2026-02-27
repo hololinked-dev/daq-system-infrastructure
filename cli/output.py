@@ -8,13 +8,13 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from .models import AppConfig
-from .passwords import generate_mqtt_hash
 
 DEFAULT_DB_HOST = "host.docker.internal"
 DEFAULT_DB_PORT = 5432
 
 
 def load_config(path: Path) -> AppConfig:
+    """Load TOML config from the given path and validate it against the `AppConfig` model."""
     try:
         with path.open("rb") as fh:
             raw = tomllib.load(fh)
@@ -39,12 +39,14 @@ def load_config(path: Path) -> AppConfig:
 
 
 def build_dotenv_variables(config: AppConfig) -> dict[str, str]:
+    """Build a dictionary of environment variables from the given config."""
     env: dict[str, str] = dict()
     config.update_dotenv(env)
     return env
 
 
 def write_dotenv_file(path: Path, env: dict[str, str]) -> None:
+    """Write the given environment variables to a .env file at the specified path."""
     ordered = {k: env[k] for k in sorted(env)}
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
@@ -106,23 +108,16 @@ def update_dbeaver_config(config: AppConfig) -> None:
         print("INFO: No DBeaver connections matched configured databases; nothing changed")
 
 
-def write_mqtt_password_file(config: AppConfig, output: Path, iterations: int, salt_bytes: int) -> None:
-    if not config.mqtt:
-        print("ERROR: mqtt section is missing in the config; cannot generate password file", file=sys.stderr)
-        raise SystemExit(2)
-
-    if iterations < 1:
-        print("ERROR: iterations must be a positive integer", file=sys.stderr)
-        raise SystemExit(2)
-    if salt_bytes < 1:
-        print("ERROR: salt-bytes must be a positive integer", file=sys.stderr)
-        raise SystemExit(2)
-
-    lines = []
-    for user in config.mqtt.users:
-        hashed = generate_mqtt_hash(user.password, iterations, salt_bytes)
-        lines.append(f"{user.username}:{hashed}")
-
+def write_mqtt_password_file(output: Path, passwords: list[str], append: bool = True) -> None:
+    """
+    Write given list of MQTT password entries to the given output file.
+    Use `append=True` to append to existing file instead of overwriting.
+    """
+    lines = "\n".join(passwords)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"INFO: Wrote {len(lines)} MQTT credentials to {output}")
+    if append and output.exists():
+        existing = output.read_text(encoding="utf-8").strip()
+        if existing:
+            lines = f"{existing}\n{lines}"
+    output.write_text(f"{lines}\n", encoding="utf-8")
+    print(f"INFO: Wrote {len(passwords)} MQTT credentials to {output}")

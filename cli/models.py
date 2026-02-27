@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Iterable
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
-MQTT_PASSWORD_FILE_DEFAULT = Path("conf/passwords.txt")
-DEFAULT_MQTT_ITERATIONS = 101
-DEFAULT_MQTT_SALT_BYTES = 12
+from .passwords import DEFAULT_MQTT_ITERATIONS, DEFAULT_MQTT_SALT_BYTES, MQTT_PASSWORD_FILE_DEFAULT
 
 
 class Database(BaseModel):
@@ -214,19 +213,6 @@ class AppConfig(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
-    @model_validator(mode="after")
-    def _validate_dependencies(self) -> "AppConfig":
-        errors: list[str] = []
-        if self.keycloak and not self.database.keycloak:
-            errors.append("database.keycloak is required when keycloak is configured")
-        if not any(self.database.iter_databases()):
-            errors.append("at least one database entry (keycloak or hololinked) is required")
-        if self.mqtt and not self.mqtt.users:
-            errors.append("mqtt.users must not be empty when mqtt section is present")
-        if errors:
-            raise ValueError("; ".join(errors))
-        return self
-
     def update_dotenv(self, env: dict[str, str]) -> None:
         if self.postgres:
             self.postgres.update_dotenv(env)
@@ -236,7 +222,13 @@ class AppConfig(BaseModel):
             self.keycloak.update_dotenv(env)
         if self.mongodb:
             self.mongodb.update_dotenv(env)
-        if self.mqtt:
-            self.mqtt.update_dotenv(env)
+        # if self.mqtt:
+        #     self.mqtt.update_dotenv(env)
         if self.hololinked:
             self.hololinked.update_dotenv(env)
+
+    def iter_databases(self) -> Iterable[Database]:
+        if self.keycloak and self.keycloak.database:
+            yield self.keycloak.database
+        if self.hololinked and self.hololinked.database:
+            yield self.hololinked.database

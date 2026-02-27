@@ -3,6 +3,11 @@ from __future__ import annotations
 import base64
 import hashlib
 import secrets
+from pathlib import Path
+
+MQTT_PASSWORD_FILE_DEFAULT = Path("conf/passwords.txt")
+DEFAULT_MQTT_ITERATIONS = 101
+DEFAULT_MQTT_SALT_BYTES = 12
 
 
 def generate_mqtt_hash(password: str, iterations: int, salt_bytes: int) -> str:

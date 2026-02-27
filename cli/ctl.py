@@ -7,14 +7,18 @@ import sys
 from pathlib import Path
 
 from .certs import DEFAULT_CA_CN, OpenSSLUnavailable, generate_certificates
-from .config_models import DEFAULT_MQTT_ITERATIONS, DEFAULT_MQTT_SALT_BYTES, MQTT_PASSWORD_FILE_DEFAULT
-from .file_ops import (
+from .output import (
     build_dotenv_variables,
     load_config,
     update_dbeaver_config,
     write_alembic_dotenv,
-    write_env_file,
+    write_dotenv_file,
     write_mqtt_password_file,
+)
+from .passwords import (
+    DEFAULT_MQTT_ITERATIONS,
+    DEFAULT_MQTT_SALT_BYTES,
+    MQTT_PASSWORD_FILE_DEFAULT,
 )
 
 CONFIG_DEFAULT_PATH = Path("config.toml")
@@ -23,7 +27,24 @@ ALEMBIC_DOTENV_DEFAULT_PATH = Path(f"db-migrations{os.sep}.env")
 CERTS_DEFAULT_BASE = Path("certs")
 
 
-def build_parser() -> argparse.ArgumentParser:
+class Args(argparse.Namespace):
+    """Namespace of the CLI arguments after parsing"""
+
+    config: Path
+    command: str
+    output: Path | None
+    skip_dbeaver: bool
+    iterations: int
+    salt_bytes: int
+    base: Path
+    service: str
+    ca_name: str
+    mqtt_dns: list[str]
+    http_dns: list[str]
+    client: list[str]
+
+
+def parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ctl", description="Infrastructure utility CLI")
     parser.add_argument(
         "--config",
@@ -49,7 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip updating DBeaver initial data sources",
     )
 
-    mqtt_parser = subparsers.add_parser("mqtt-passwords", help="Generate mosquitto password file from config")
+    mqtt_parser = subparsers.add_parser("mqtt", help="Generate mosquitto password file from config")
     mqtt_parser.add_argument(
         "--output",
         "-o",
@@ -70,7 +91,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Salt length in bytes (default: 12)",
     )
 
-    alembic_parser = subparsers.add_parser("alembic-env", help="Generate .env for Alembic using hololinked database")
+    alembic_parser = subparsers.add_parser("alembic", help="Generate .env for Alembic using hololinked database")
     alembic_parser.add_argument(
         "--output",
         "-o",
@@ -123,7 +144,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
-    args = build_parser().parse_args(argv)
+    args = parser().parse_args(argv, namespace=Args())  # type: Args
 
     if args.command == "certs":
         services = {"mqtt", "http"} if args.service == "both" else {args.service}
@@ -145,7 +166,7 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.command == "dotenv":
         env = build_dotenv_variables(config)
-        write_env_file(args.output, env)
+        write_dotenv_file(args.output, env)
         if not args.skip_dbeaver:
             update_dbeaver_config(config)
     elif args.command == "mqtt-passwords":

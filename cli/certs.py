@@ -35,7 +35,7 @@ def _run_openssl(args: list[str], cwd: Path | None = None) -> None:
 
 def _write_req_config(common_name: str, dns_names: Iterable[str]) -> Path:
     alt_names = [name for name in dns_names if name] or [common_name]
-    san_lines = [f"DNS.{idx+1} = {name}" for idx, name in enumerate(alt_names)]
+    san_lines = [f"DNS.{idx + 1} = {name}" for idx, name in enumerate(alt_names)]
     san_block = "\n".join(san_lines)
     cfg = f"""
 [ req ]
@@ -106,42 +106,46 @@ def generate_server_cert(
     cfg_path = _write_req_config(common_name, dns_names)
 
     print(f"INFO: Generating {prefix} server key/cert")
-    _run_openssl([
-        "req",
-        "-new",
-        "-nodes",
-        "-newkey",
-        f"rsa:{DEFAULT_SERVER_KEY_BITS}",
-        "-keyout",
-        str(key_path),
-        "-out",
-        str(csr_path),
-        "-subj",
-        f"/CN={common_name}",
-        "-config",
-        str(cfg_path),
-    ])
+    _run_openssl(
+        [
+            "req",
+            "-new",
+            "-nodes",
+            "-newkey",
+            f"rsa:{DEFAULT_SERVER_KEY_BITS}",
+            "-keyout",
+            str(key_path),
+            "-out",
+            str(csr_path),
+            "-subj",
+            f"/CN={common_name}",
+            "-config",
+            str(cfg_path),
+        ]
+    )
 
-    _run_openssl([
-        "x509",
-        "-req",
-        "-in",
-        str(csr_path),
-        "-CA",
-        str(ca_cert),
-        "-CAkey",
-        str(ca_key),
-        "-CAcreateserial",
-        "-out",
-        str(crt_path),
-        "-days",
-        str(DEFAULT_CERT_DAYS),
-        "-sha256",
-        "-extensions",
-        "v3_req",
-        "-extfile",
-        str(cfg_path),
-    ])
+    _run_openssl(
+        [
+            "x509",
+            "-req",
+            "-in",
+            str(csr_path),
+            "-CA",
+            str(ca_cert),
+            "-CAkey",
+            str(ca_key),
+            "-CAcreateserial",
+            "-out",
+            str(crt_path),
+            "-days",
+            str(DEFAULT_CERT_DAYS),
+            "-sha256",
+            "-extensions",
+            "v3_req",
+            "-extfile",
+            str(cfg_path),
+        ]
+    )
 
     cfg_path.unlink(missing_ok=True)
     csr_path.unlink(missing_ok=True)
@@ -162,36 +166,40 @@ def generate_client_cert(
     crt_path = client_dir / f"{prefix}_{client_name}.crt"
 
     print(f"INFO: Generating {prefix} client certificate for {client_name}")
-    _run_openssl([
-        "req",
-        "-new",
-        "-nodes",
-        "-newkey",
-        f"rsa:{DEFAULT_SERVER_KEY_BITS}",
-        "-keyout",
-        str(key_path),
-        "-out",
-        str(csr_path),
-        "-subj",
-        f"/CN={client_name}",
-    ])
+    _run_openssl(
+        [
+            "req",
+            "-new",
+            "-nodes",
+            "-newkey",
+            f"rsa:{DEFAULT_SERVER_KEY_BITS}",
+            "-keyout",
+            str(key_path),
+            "-out",
+            str(csr_path),
+            "-subj",
+            f"/CN={client_name}",
+        ]
+    )
 
-    _run_openssl([
-        "x509",
-        "-req",
-        "-in",
-        str(csr_path),
-        "-CA",
-        str(ca_cert),
-        "-CAkey",
-        str(ca_key),
-        "-CAcreateserial",
-        "-out",
-        str(crt_path),
-        "-days",
-        str(DEFAULT_CERT_DAYS),
-        "-sha256",
-    ])
+    _run_openssl(
+        [
+            "x509",
+            "-req",
+            "-in",
+            str(csr_path),
+            "-CA",
+            str(ca_cert),
+            "-CAkey",
+            str(ca_key),
+            "-CAcreateserial",
+            "-out",
+            str(crt_path),
+            "-days",
+            str(DEFAULT_CERT_DAYS),
+            "-sha256",
+        ]
+    )
 
     csr_path.unlink(missing_ok=True)
     return key_path, crt_path

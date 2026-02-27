@@ -7,17 +7,11 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from .config_models import AppConfig
-from .mqtt_passwords import generate_mqtt_hash
+from .models import AppConfig
+from .passwords import generate_mqtt_hash
 
 DEFAULT_DB_HOST = "host.docker.internal"
 DEFAULT_DB_PORT = 5432
-
-
-def build_dotenv_variables(config: AppConfig) -> dict[str, str]:
-    env: dict[str, str] = dict()
-    config.update_dotenv(env)
-    return env
 
 
 def load_config(path: Path) -> AppConfig:
@@ -44,13 +38,32 @@ def load_config(path: Path) -> AppConfig:
         raise SystemExit(2)
 
 
-def write_env_file(path: Path, env: dict[str, str]) -> None:
+def build_dotenv_variables(config: AppConfig) -> dict[str, str]:
+    env: dict[str, str] = dict()
+    config.update_dotenv(env)
+    return env
+
+
+def write_dotenv_file(path: Path, env: dict[str, str]) -> None:
     ordered = {k: env[k] for k in sorted(env)}
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:
         for key, value in ordered.items():
             fh.write(f"{key}={value}\n")
     print(f"INFO: Wrote {len(ordered)} entries to {path}")
+
+
+def write_alembic_dotenv(config: AppConfig, output: Path) -> None:
+    if not config.hololinked:
+        print("ERROR: database.hololinked section is required to build alembic dotenv", file=sys.stderr)
+        raise SystemExit(2)
+
+    env = {
+        "HOLOLINKED_DB_NAME": config.hololinked.database.name,
+        "HOLOLINKED_DB_USERNAME": config.hololinked.database.username,
+        "HOLOLINKED_DB_PASSWORD": config.hololinked.database.password,
+    }
+    write_dotenv_file(output, env)
 
 
 def update_dbeaver_config(config: AppConfig) -> None:
@@ -67,7 +80,7 @@ def update_dbeaver_config(config: AppConfig) -> None:
 
     connections = data.get("connections", {})
     updated = False
-    for db in config.database.iter_databases():
+    for db in config.iter_databases():
         for conn_id, conn in list(connections.items()):
             name = str(conn.get("name", "")).lower()
             if db.name.lower() not in name:
@@ -113,17 +126,3 @@ def write_mqtt_password_file(config: AppConfig, output: Path, iterations: int, s
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"INFO: Wrote {len(lines)} MQTT credentials to {output}")
-
-
-def write_alembic_dotenv(config: AppConfig, output: Path) -> None:
-    hololinked = config.database.hololinked
-    if not hololinked:
-        print("ERROR: database.hololinked section is required to build alembic dotenv", file=sys.stderr)
-        raise SystemExit(2)
-
-    env = {
-        "HOLOLINKED_DB_NAME": hololinked.name,
-        "HOLOLINKED_DB_USERNAME": hololinked.username,
-        "HOLOLINKED_DB_PASSWORD": hololinked.password,
-    }
-    write_env_file(output, env)

@@ -19,7 +19,6 @@ from .output import (
 from .passwords import (
     DEFAULT_MQTT_ITERATIONS,
     DEFAULT_MQTT_SALT_BYTES,
-    MQTT_PASSWORD_FILE_DEFAULT,
     generate_mqtt_password,
 )
 
@@ -27,6 +26,7 @@ CONFIG_DEFAULT_PATH = Path("config.toml")
 DOTENV_DEFAULT_PATH = Path(".env")
 ALEMBIC_DOTENV_DEFAULT_PATH = Path(f"db-migrations{os.sep}.env")
 CERTS_DEFAULT_BASE = Path("certs")
+MQTT_PASSWORD_FILE_DEFAULT = Path("conf/passwords.txt")
 
 
 class Args(argparse.Namespace):
@@ -52,6 +52,8 @@ class Args(argparse.Namespace):
 
 
 class Commands(StrEnum):
+    """Available CLI commands"""
+
     DOTENV = "dotenv"
     MQTT = "mqtt"
     MQTT_GENERATE_PASSWORD = "generate-password"
@@ -60,6 +62,7 @@ class Commands(StrEnum):
 
 
 def parser() -> argparse.ArgumentParser:
+    """Create and return the argument parser for the CLI."""
     parser = argparse.ArgumentParser(prog="ctl", description="Infrastructure utility CLI")
     parser.add_argument(
         "--config",
@@ -203,6 +206,11 @@ def main(argv: list[str] | None = None) -> None:
             passwords = generate_mqtt_password(config, iterations=args.iterations, salt_bytes=args.salt_bytes)
             write_mqtt_password_file(output, passwords, append=not args.overwrite)
             return
+        print(
+            f"ERROR: subcommand is required for 'mqtt' (e.g. '{Commands.MQTT_GENERATE_PASSWORD}'); see --help for details",
+            file=sys.stderr,
+        )
+        return
     elif args.command == Commands.ALEMBIC:
         write_alembic_dotenv(config, args.output)
         return

@@ -4,9 +4,7 @@ import base64
 import hashlib
 import secrets
 import sys
-from pathlib import Path
 
-MQTT_PASSWORD_FILE_DEFAULT = Path("conf/passwords.txt")
 DEFAULT_MQTT_ITERATIONS = 101
 DEFAULT_MQTT_SALT_BYTES = 12
 

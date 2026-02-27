@@ -5,8 +5,6 @@ from typing import Iterable
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
-from .passwords import DEFAULT_MQTT_ITERATIONS, DEFAULT_MQTT_SALT_BYTES, MQTT_PASSWORD_FILE_DEFAULT
-
 
 class Database(BaseModel):
     """
@@ -175,22 +173,8 @@ class HololinkedSettings(BaseModel):
             env["POSTGRES_DATABASE_PASSWORDS"] += f",{self.database.password}"
 
 
-class MQTTUser(BaseModel):
-    """MQTT user credentials"""
-
-    username: str
-    """username to create"""
-    password: str
-    """password for the user"""
-
-    model_config = ConfigDict(extra="ignore")
-
-
 class MQTTSettings(BaseModel):
-    users: list[MQTTUser] = Field(default_factory=list)
-    password_file: Path = MQTT_PASSWORD_FILE_DEFAULT
-    iterations: int = DEFAULT_MQTT_ITERATIONS
-    salt_bytes: int = DEFAULT_MQTT_SALT_BYTES
+    password_file: Path
 
     model_config = ConfigDict(extra="ignore")
 

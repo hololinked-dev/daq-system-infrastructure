@@ -2,18 +2,24 @@
 from __future__ import annotations
 
 import argparse
+import os
+import sys
 from pathlib import Path
 
-from .alembic_env import write_alembic_dotenv
 from .certs import DEFAULT_CA_CN, OpenSSLUnavailable, generate_certificates
-from .config_loader import load_config
 from .config_models import DEFAULT_MQTT_ITERATIONS, DEFAULT_MQTT_SALT_BYTES, MQTT_PASSWORD_FILE_DEFAULT
-from .dotenv_ops import build_dotenv_variables, update_dbeaver_config, write_env_file
-from .mqtt_passwords import write_mqtt_password_file
+from .file_ops import (
+    build_dotenv_variables,
+    load_config,
+    update_dbeaver_config,
+    write_alembic_dotenv,
+    write_env_file,
+    write_mqtt_password_file,
+)
 
-CONFIG_DEFAULT_PATH = Path("config.example.toml")
+CONFIG_DEFAULT_PATH = Path("config.toml")
 DOTENV_DEFAULT_PATH = Path(".env")
-ALEMBIC_DOTENV_DEFAULT_PATH = Path(".env.alembic")
+ALEMBIC_DOTENV_DEFAULT_PATH = Path(f"db-migrations{os.sep}.env")
 CERTS_DEFAULT_BASE = Path("certs")
 
 
@@ -24,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
         "-c",
         type=Path,
         default=CONFIG_DEFAULT_PATH,
-        help="Path to TOML config (default: config.example.toml)",
+        help="Path to TOML config (default: config.toml)",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -70,7 +76,7 @@ def build_parser() -> argparse.ArgumentParser:
         "-o",
         type=Path,
         default=ALEMBIC_DOTENV_DEFAULT_PATH,
-        help="Output dotenv path (default: .env.alembic)",
+        help=f"Output dotenv path (default: {ALEMBIC_DOTENV_DEFAULT_PATH})",
     )
 
     certs_parser = subparsers.add_parser("certs", help="Generate self-signed MQTT and HTTP certificates")
@@ -131,7 +137,7 @@ def main(argv: list[str] | None = None) -> None:
                 client_names=args.client,
             )
         except OpenSSLUnavailable as exc:
-            print(f"ERROR: {exc}")
+            print(f"ERROR: {exc}", file=sys.stderr)
             raise SystemExit(1)
         return
 
@@ -148,6 +154,7 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "alembic-env":
         write_alembic_dotenv(config, args.output)
     else:
+        print(f"ERROR: Unknown command: {args.command}", file=sys.stderr)
         raise SystemExit(1)
 
 

@@ -1,11 +1,9 @@
 import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
 from dotenv import load_dotenv
+from sqlalchemy import engine_from_config, pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -27,11 +25,12 @@ target_metadata = ThingTableBase.metadata
 # ... etc.
 
 load_dotenv(override=True)
-POSTGRES_NONADMIN_USER = os.getenv("POSTGRES_NONADMIN_USER", "hololinked")
-POSTGRES_NONADMIN_PASSWORD = os.getenv("POSTGRES_NONADMIN_PASSWORD", "postgresnonadminpassword")
+USER = os.getenv("HOLOLINKED_DB_USERNAME", "hololinked")
+PASSWORD = os.getenv("HOLOLINKED_DB_PASSWORD", "postgresnonadminpassword")
+DATABASE = os.getenv("HOLOLINKED_DB_NAME", "hololinked")
 config.set_main_option(
     "sqlalchemy.url",
-    f"postgresql+psycopg2://{POSTGRES_NONADMIN_USER}:{POSTGRES_NONADMIN_PASSWORD}@localhost:5432/hololinked",
+    f"postgresql+psycopg2://{USER}:{PASSWORD}@localhost:5432/{DATABASE}",
 )
 
 

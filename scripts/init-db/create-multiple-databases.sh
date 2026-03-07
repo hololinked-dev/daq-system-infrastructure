@@ -3,25 +3,6 @@
 set -e
 set -u
 
-function create_user_and_database() {
-	local database=$1
-	echo "  Creating user and database '$database'"
-	psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
-	    CREATE USER $database WITH ENCRYPTED PASSWORD '$POSTGRES_NONADMIN_PASSWORD';
-	    CREATE DATABASE $database WITH OWNER $database;
-	    GRANT ALL PRIVILEGES ON DATABASE $database TO $database;
-		GRANT USAGE, CREATE ON SCHEMA public TO $database;
-EOSQL
-}
-
-if [ -n "$POSTGRES_MULTIPLE_DATABASES" ]; then
-	echo "Multiple database creation requested: $POSTGRES_MULTIPLE_DATABASES"
-	for db in $(echo $POSTGRES_MULTIPLE_DATABASES | tr ',' ' '); do
-		create_user_and_database $db
-	done
-	echo "Multiple databases created"
-fi
-
 # https://github.com/mrts/docker-postgresql-multiple-databases
 
 # MIT License
@@ -45,3 +26,29 @@ fi
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+function create_user_and_database() {
+	local database=$1
+	local username=$2
+	local password=$3
+	echo "Creating user and database '$database'"
+	psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+	    CREATE USER $username WITH ENCRYPTED PASSWORD '$password';
+	    CREATE DATABASE $database WITH OWNER $username;
+	    GRANT ALL PRIVILEGES ON DATABASE $database TO $username;
+		GRANT USAGE, CREATE ON SCHEMA public TO $username;
+		EOSQL
+	echo "User and database '$database' created"
+}
+
+if [ -n "$POSTGRES_DATABASES" ]; then
+	echo "Multiple database creation requested: $POSTGRES_DATABASES"
+	IFS=',' read -ra dbs <<< "$POSTGRES_DATABASES"
+	IFS=',' read -ra users <<< "$POSTGRES_DATABASE_USERNAMES"
+	IFS=',' read -ra pwds <<< "$POSTGRES_DATABASE_PASSWORDS"
+	for i in "${!dbs[@]}"; do
+		create_user_and_database "${dbs[$i]}" "${users[$i]}" "${pwds[$i]}"
+	done
+	echo "Multiple databases created"
+fi
+

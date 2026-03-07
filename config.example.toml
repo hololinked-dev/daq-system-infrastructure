@@ -1,0 +1,44 @@
+[postgres]
+admin_username = "admin"
+admin_password = "password"
+max_connections = 200
+max_worker_processes = 8
+max_parallel_workers = 8
+max_parallel_workers_per_gather = 4
+shared_buffers = "2GB"
+effective_cache_size = "6GB"
+maintenance_work_mem = "1GB"
+listen_addresses = "*"
+init_db_args = "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+
+[database.keycloak]
+name = "keycloak"
+username = "keycloak"
+password = "password"
+
+[database.hololinked]
+name = "hololinked"
+username = "hololinked"
+password = "password"
+
+[dbeaver]
+admin_username = "admin"
+admin_password = "password"
+
+[keycloak]
+database_engine = "postgres"
+admin_username = "admin"
+admin_password = "password"
+
+[mongodb]
+admin_username = "admin"
+admin_password = "password"
+
+[mongodb.express]
+admin_username = "admin"
+admin_password = "password"
+
+[mqtt]
+password_file = "conf/passwords.txt"
+iterations = 101
+salt_bytes = 12

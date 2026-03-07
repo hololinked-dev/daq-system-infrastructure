@@ -1,7 +1,6 @@
 # DAQ System Infrastructure (Docker)
 
-Project to setup a infrastructure for a networked data acquisition system or IoT based on docker.
-Tailored for usage with [`hololinked`](https://github.com/hololinked-dev/hololinked).
+Project to setup a infrastructure for a networked data acquisition system or IoT based on docker. Tailored for usage with [`hololinked`](https://github.com/hololinked-dev/hololinked).
 
 > There will be a separate version for Kubernetes, little late in the future, consider contributing if you need earlier.
 
@@ -16,3 +15,7 @@ The CLI's main job is to create environment variable files (dotenv).
 - **Mosquitto**: MQTT broker.
 - **MongoDB** (optional): NoSQL database. Either of MongoDB or PostgreSQL can be used with `hololinked`.
 - **MongoExpress**: Mongo Database viewer and management tool.
+
+# Documentation
+
+Please visit [https://docs.hololinked.dev/daq-system-infrastructure](https://docs.hololinked.dev/daq-system-infrastructure).

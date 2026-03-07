@@ -231,19 +231,19 @@ def load_config(path: str) -> AppConfig:
 
 def merge_config_with_input_arguments(config: AppConfig, args: Args) -> AppConfig:
     """Merge the loaded config with input arguments, e.g. for MQTT user credentials."""
-    if args.mqtt_command == Commands.MQTT_GENERATE_PASSWORD:
-        if args.mqtt_usernames and args.mqtt_passwords:
-            if len(args.mqtt_usernames) != len(args.mqtt_passwords):
-                print("ERROR: The number of --usernames and --passwords must match", file=sys.stderr)
-                raise SystemExit(2)
-            users = [MQTTUser(username=u, password=p) for u, p in zip(args.mqtt_usernames, args.mqtt_passwords)]
-            mqtt_settings = config.mqtt or MQTTSettings(password_file=MQTT_PASSWORD_FILE_DEFAULT, users=users)
-            mqtt_settings.users = users
-            config.mqtt = mqtt_settings
-        elif args.mqtt_usernames or args.mqtt_passwords:
-            print("ERROR: Both --usernames and --passwords must be provided together", file=sys.stderr)
+    if args.mqtt_command != Commands.MQTT_GENERATE_PASSWORD:
+        return config
+    if args.mqtt_usernames and args.mqtt_passwords:
+        if len(args.mqtt_usernames) != len(args.mqtt_passwords):
+            print("ERROR: The number of --usernames and --passwords must match", file=sys.stderr)
             raise SystemExit(2)
-
+        users = [MQTTUser(username=u, password=p) for u, p in zip(args.mqtt_usernames, args.mqtt_passwords)]
+        mqtt_settings = config.mqtt or MQTTSettings(password_file=MQTT_PASSWORD_FILE_DEFAULT, users=users)
+        mqtt_settings.users = users
+        config.mqtt = mqtt_settings
+    elif args.mqtt_usernames or args.mqtt_passwords:
+        print("ERROR: Both --usernames and --passwords must be provided together", file=sys.stderr)
+        raise SystemExit(2)
     return config
 
 

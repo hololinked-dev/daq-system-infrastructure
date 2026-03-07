@@ -5,6 +5,8 @@ from typing import Iterable
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
+from cli.passwords import DEFAULT_MQTT_ITERATIONS, DEFAULT_MQTT_SALT_BYTES
+
 
 class Database(BaseModel):
     """
@@ -173,10 +175,31 @@ class HololinkedSettings(BaseModel):
             env["POSTGRES_DATABASE_PASSWORDS"] += f",{self.database.password}"
 
 
-class MQTTSettings(BaseModel):
-    password_file: Path
+class MQTTUser(BaseModel):
+    """MQTT user credentials"""
+
+    username: str
+    """username to create"""
+    password: str
+    """password for the user"""
 
     model_config = ConfigDict(extra="ignore")
+
+
+class MQTTSettings(BaseModel):
+    password_file: Path
+    """password file path for mosquitto (relative to project root)"""
+    iterations: int = DEFAULT_MQTT_ITERATIONS
+    """number of iterations to use for generating password hash, this is not stored in dotenv"""
+    salt_bytes: int = DEFAULT_MQTT_SALT_BYTES
+    """salt bytes for password hash generation, this is not stored in dotenv"""
+    users: list[MQTTUser] | None = None
+    """list of MQTT users to create, this is not loaded from toml file, but needs to be given as input"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    def update_dotenv(self, env: dict[str, str]) -> None:
+        pass
 
 
 class AppConfig(BaseModel):
@@ -206,8 +229,8 @@ class AppConfig(BaseModel):
             self.keycloak.update_dotenv(env)
         if self.mongodb:
             self.mongodb.update_dotenv(env)
-        # if self.mqtt:
-        #     self.mqtt.update_dotenv(env)
+        if self.mqtt:
+            self.mqtt.update_dotenv(env)
         if self.hololinked:
             self.hololinked.update_dotenv(env)
 

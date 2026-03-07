@@ -1,7 +1,7 @@
 [project]
 name = "daq-system-infrastructure"
 version = "0.1.0"
-description = "set of python tools that faciliate IT infrastructure installation"
+description = "set of python tools that faciliate IT infrastructure installation for IoT applications"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -15,8 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-create_dotenv = "create_dotenv:main"
-ctl = "cli.ctl:main"
+stackctl = "cli.ctl:main"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
@@ -24,5 +23,4 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["cli"]
-py-modules = ["create_dotenv"]
 

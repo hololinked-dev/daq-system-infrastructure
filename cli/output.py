@@ -2,40 +2,12 @@ from __future__ import annotations
 
 import json
 import sys
-import tomllib
 from pathlib import Path
-
-from pydantic import ValidationError
 
 from .models import AppConfig
 
 DEFAULT_DB_HOST = "host.docker.internal"
 DEFAULT_DB_PORT = 5432
-
-
-def load_config(path: Path) -> AppConfig:
-    """Load TOML config from the given path and validate it against the `AppConfig` model."""
-    try:
-        with path.open("rb") as fh:
-            raw = tomllib.load(fh)
-    except FileNotFoundError:
-        print(f"ERROR: Config file not found: {path}", file=sys.stderr)
-        raise SystemExit(1)
-    except tomllib.TOMLDecodeError as exc:
-        print(f"ERROR: Could not parse TOML at {path}: {exc}", file=sys.stderr)
-        raise SystemExit(1)
-
-    try:
-        return AppConfig.model_validate(raw)
-    except ValidationError as exc:
-        print("ERROR: Configuration validation failed:", file=sys.stderr)
-        for err in exc.errors():
-            loc = ".".join(str(part) for part in err["loc"])
-            print(f" - {loc}: {err['msg']}", file=sys.stderr)
-        raise SystemExit(2)
-    except ValueError as exc:
-        print(f"ERROR: Configuration validation failed: {exc}", file=sys.stderr)
-        raise SystemExit(2)
 
 
 def build_dotenv_variables(config: AppConfig) -> dict[str, str]:
@@ -52,7 +24,10 @@ def write_dotenv_file(path: Path, env: dict[str, str]) -> None:
     with path.open("w", encoding="utf-8") as fh:
         for key, value in ordered.items():
             fh.write(f"{key}={value}\n")
-    print(f"INFO: Wrote {len(ordered)} entries to {path}")
+    print(
+        f"INFO: Wrote {len(ordered)} entries to {path}, "
+        + "use `docker compose up <module name> -d` to start the services you need"
+    )
 
 
 def write_alembic_dotenv(config: AppConfig, output: Path) -> None:

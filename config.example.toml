@@ -42,7 +42,3 @@ admin_password = "password"
 password_file = "conf/passwords.txt"
 iterations = 101
 salt_bytes = 12
-
-[[mqtt.users]]
-username = "sampleuser"
-password = "changeme"

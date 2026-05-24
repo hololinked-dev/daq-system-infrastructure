@@ -116,6 +116,79 @@ services:
       - ./certs:/mosquitto/config/certs
     restart: unless-stopped
 
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SERVER_URL: https://${MINIO_API_HOSTNAME}
+      MINIO_BROWSER_REDIRECT_URL: https://${MINIO_CONSOLE_HOSTNAME}
+    volumes:
+      - ./data/minio:/data
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      # S3 API
+      - traefik.http.routers.minio-api.rule=Host(`${MINIO_API_HOSTNAME}`)
+      - traefik.http.routers.minio-api.entrypoints=websecure
+      - traefik.http.routers.minio-api.tls.certresolver=le
+      - traefik.http.routers.minio-api.service=minio-api-svc
+      - traefik.http.routers.minio-api.middlewares=secure-headers@docker
+      - traefik.http.services.minio-api-svc.loadbalancer.server.port=9000
+      # Web console
+      - traefik.http.routers.minio-console.rule=Host(`${MINIO_CONSOLE_HOSTNAME}`)
+      - traefik.http.routers.minio-console.entrypoints=websecure
+      - traefik.http.routers.minio-console.tls.certresolver=le
+      - traefik.http.routers.minio-console.service=minio-console-svc
+      - traefik.http.routers.minio-console.middlewares=secure-headers@docker
+      - traefik.http.services.minio-console-svc.loadbalancer.server.port=9001
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      # No exposed dashboard
+      - --api.dashboard=false
+      - --api.insecure=false
+      # Docker provider (reads labels from other containers)
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      # Port 80 → 443 permanent redirect
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      # HTTPS with default TLS cert resolver
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls.certresolver=le
+      # Let's Encrypt via TLS-ALPN-01 (no separate port-80 token exchange)
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      # Logging
+      - --log.level=WARN
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+    volumes:
+      # Read-only Docker socket — Traefik only reads container metadata
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/letsencrypt:/letsencrypt
+    networks:
+      - proxy
+
   # reverse-proxy:
   #   image: nginx:latest
   #   container_name: reverse-proxy
@@ -130,3 +203,8 @@ services:
   #     - keycloak
   #     - dbeaver
   #   restart: unless-stopped
+
+
+networks:
+  proxy:
+    driver: bridge

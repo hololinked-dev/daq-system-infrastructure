@@ -42,3 +42,14 @@ admin_password = "password"
 password_file = "conf/passwords.txt"
 iterations = 101
 salt_bytes = 12
+
+[minio]
+api_hostname = "storage.example.com"
+console_hostname = "storage-console.example.com"
+root_user = "minio-admin"
+root_password = "change-me-use-a-strong-random-password"
+
+[traefik]
+http_port = 80
+https_port = 443
+acme_email = "admin@example.com"

@@ -117,7 +117,7 @@ services:
     restart: unless-stopped
 
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -152,6 +152,37 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: vault
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK # lets Vault lock memory pages so secrets can't be swapped to disk
+    command: vault server -config=/vault/config/vault.hcl
+    environment:
+      VAULT_API_ADDR: https://${VAULT_HOSTNAME}
+    volumes:
+      - ./conf/vault.hcl:/vault/config/vault.hcl:ro
+      - ./data/vault/data:/vault/data
+      - ./data/vault/logs:/vault/logs
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.vault.rule=Host(`${VAULT_HOSTNAME}`)
+      - traefik.http.routers.vault.entrypoints=websecure
+      - traefik.http.routers.vault.tls.certresolver=le
+      - traefik.http.routers.vault.middlewares=secure-headers@docker
+      - traefik.http.services.vault.loadbalancer.server.port=8200
+    healthcheck:
+      # vault status exits 0=active, 2=sealed, 1=error.
+      # We treat sealed (2) as unhealthy on purpose — operator must unseal.
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
   traefik:
     image: traefik:v3.3

@@ -202,6 +202,45 @@ class MQTTSettings(BaseModel):
         pass
 
 
+class TraefikSettings(BaseModel):
+    """Traefik settings"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    http_port: int = Field(default=80, gt=0, lt=65536)
+    """HTTP port for listening to traffic (default: 80)"""
+    https_port: int = Field(default=443, gt=0, lt=65536)
+    """HTTPS port for listening to traffic (default: 443)"""
+    acme_email: str = Field()
+    """email for ACME certificate registration"""
+
+    def update_dotenv(self, env: dict[str, str]) -> None:
+        env["TRAEFIK_HTTP_PORT"] = str(self.http_port)
+        env["TRAEFIK_HTTPS_PORT"] = str(self.https_port)
+        env["TRAEFIK_ACME_EMAIL"] = self.acme_email
+
+
+class MinioSettings(BaseModel):
+    """MinIO settings"""
+
+    root_user: str
+    """root username for MinIO"""
+    root_password: str
+    """root password for MinIO"""
+    api_hostname: str
+    """hostname for MinIO API (e.g., minio-api.local)"""
+    console_hostname: str
+    """hostname for MinIO console (e.g., minio-console.local)"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    def update_dotenv(self, env: dict[str, str]) -> None:
+        env["MINIO_ROOT_USER"] = self.root_user
+        env["MINIO_ROOT_PASSWORD"] = self.root_password
+        env["MINIO_API_HOSTNAME"] = self.api_hostname
+        env["MINIO_CONSOLE_HOSTNAME"] = self.console_hostname
+
+
 class AppConfig(BaseModel):
     """Representation of the config loaded from the TOML file"""
 
@@ -217,6 +256,10 @@ class AppConfig(BaseModel):
     """MQTT settings block"""
     hololinked: HololinkedSettings | None = None
     """Hololinked settings block"""
+    traefik: TraefikSettings | None = None
+    """Traefik settings block"""
+    minio: MinioSettings | None = None
+    """MinIO settings block"""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -233,6 +276,10 @@ class AppConfig(BaseModel):
             self.mqtt.update_dotenv(env)
         if self.hololinked:
             self.hololinked.update_dotenv(env)
+        if self.traefik:
+            self.traefik.update_dotenv(env)
+        if self.minio:
+            self.minio.update_dotenv(env)
 
     def iter_databases(self) -> Iterable[Database]:
         if self.keycloak and self.keycloak.database:

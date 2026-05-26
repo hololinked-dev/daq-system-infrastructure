@@ -271,6 +271,10 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     args = parser().parse_args(argv, namespace=Args())  # type: Args
 
+    for attr in Args.__annotations__:
+        if not hasattr(args, attr):
+            setattr(args, attr, None)
+
     if args.command == Commands.CERTS:
         services = {"mqtt", "http"} if args.service == "both" else {args.service}
         try:

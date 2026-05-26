@@ -49,7 +49,7 @@ services:
       - ./data/dbeaver:/opt/cloudbeaver/workspace
     restart: unless-stopped
     depends_on:
-      - postgres  
+      - postgres
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.1.3
@@ -110,11 +110,132 @@ services:
     volumes:
       - ./conf/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - ./conf/passwords.txt:/mosquitto/config/passwords.txt
-      - ./data/mosquitto:/mosquitto/data 
+      - ./data/mosquitto:/mosquitto/data
       - ./data/mosquitto/log:/mosquitto/log
       - ./data/mosquitto/persisted:/mosquitto/data/persisted/
       - ./certs:/mosquitto/config/certs
     restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_SERVER_URL: https://${MINIO_API_HOSTNAME}
+      MINIO_BROWSER_REDIRECT_URL: https://${MINIO_CONSOLE_HOSTNAME}
+    volumes:
+      - ./data/minio:/data
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      # S3 API
+      - traefik.http.routers.minio-api.rule=Host(`${MINIO_API_HOSTNAME}`)
+      - traefik.http.routers.minio-api.entrypoints=websecure
+      - traefik.http.routers.minio-api.tls.certresolver=le
+      - traefik.http.routers.minio-api.service=minio-api-svc
+      - traefik.http.routers.minio-api.middlewares=secure-headers@docker
+      - traefik.http.services.minio-api-svc.loadbalancer.server.port=9000
+      # Web console
+      - traefik.http.routers.minio-console.rule=Host(`${MINIO_CONSOLE_HOSTNAME}`)
+      - traefik.http.routers.minio-console.entrypoints=websecure
+      - traefik.http.routers.minio-console.tls.certresolver=le
+      - traefik.http.routers.minio-console.service=minio-console-svc
+      - traefik.http.routers.minio-console.middlewares=secure-headers@docker,console-ratelimit@docker
+      - traefik.http.services.minio-console-svc.loadbalancer.server.port=9001
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  vault:
+    image: hashicorp/vault:1.18
+    container_name: vault
+    restart: unless-stopped
+    cap_add:
+      - IPC_LOCK # lets Vault lock memory pages so secrets can't be swapped to disk
+    command: vault server -config=/vault/config/vault.hcl
+    environment:
+      VAULT_API_ADDR: https://${VAULT_HOSTNAME}
+    volumes:
+      - ./conf/vault.hcl:/vault/config/vault.hcl:ro
+      - ./data/vault/data:/vault/data
+      - ./data/vault/logs:/vault/logs
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.vault.rule=Host(`${VAULT_HOSTNAME}`)
+      - traefik.http.routers.vault.entrypoints=websecure
+      - traefik.http.routers.vault.tls.certresolver=le
+      - traefik.http.routers.vault.middlewares=secure-headers@docker
+      - traefik.http.services.vault.loadbalancer.server.port=8200
+    healthcheck:
+      # vault status exits 0=active, 2=sealed, 1=error.
+      # We treat sealed (2) as unhealthy on purpose — operator must unseal.
+      test: ["CMD", "vault", "status", "-address=http://127.0.0.1:8200"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      # No exposed dashboard
+      - --api.dashboard=false
+      - --api.insecure=false
+      # Docker provider (reads labels from other containers)
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      # Port 80 → 443 permanent redirect
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+      # HTTPS with default TLS cert resolver
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls.certresolver=le
+      # Let's Encrypt via TLS-ALPN-01 (no separate port-80 token exchange)
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      # Logging
+      - --log.level=WARN
+    labels:
+      - traefik.enable=true
+      # Security headers
+      - traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.secure-headers.headers.forceSTSHeader=true
+      - traefik.http.middlewares.secure-headers.headers.stsPreload=true
+      - traefik.http.middlewares.secure-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.secure-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.secure-headers.headers.frameDeny=true
+      - traefik.http.middlewares.secure-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+      - traefik.http.middlewares.secure-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=()
+      - "traefik.http.middlewares.secure-headers.headers.contentSecurityPolicy=default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'"
+      # Rate limiting for console (brute-force protection)
+      - traefik.http.middlewares.console-ratelimit.rateLimit.average=100
+      - traefik.http.middlewares.console-ratelimit.rateLimit.burst=500
+      - traefik.http.middlewares.console-ratelimit.rateLimit.period=2m
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+    volumes:
+      # Read-only Docker socket — Traefik only reads container metadata
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/letsencrypt:/letsencrypt
+    networks:
+      - proxy
 
   # reverse-proxy:
   #   image: nginx:latest
@@ -130,3 +251,7 @@ services:
   #     - keycloak
   #     - dbeaver
   #   restart: unless-stopped
+
+networks:
+  proxy:
+    driver: bridge
